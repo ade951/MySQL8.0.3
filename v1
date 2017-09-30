@@ -1,0 +1,172 @@
+## The MySQL 8.0.3 Release Candidate is available
+## MySQL8.03 RC 已发布
+The MySQL Development team is very happy to announce that MySQL 8.0.3, the first 8.0 Release Candidate (RC1), is now available for download at dev.mysql.com (8.0.3 adds features to 8.0.2, 8.0.1 and 8.0.0). The source code is available at GitHub. You can find the full list of changes and bug fixes in the 8.0.3 Release Notes. Here are the highlights. Enjoy!
+
+MySQL的开发团队非常高兴地宣布，第一个8.0优选发布版（RC1）——MySQL的8.0.3现已可在dev.mysql.com下载（相对于8.0.2，8.0.1和8.0.0，8.0.3添加了一些新特性）。源代码可在GitHub获得。您可以在8.0.3发行说明中看到新版本的改变和bug修复的完整列表。下面是新版本的一些亮点。大家赶快体验吧！
+
+### Histograms
+Using histogram statistics in the optimizer (WL#9223) – This work by Erik Froseth makes use of histogram statistics in the optimizer.The primary use case for histogram statistics is for calculating the selectivity (filter effect) of predicates of the form “COLUMN operator CONSTANT”. Optimizer statistics are available to the user through the INFORMATION_SCHEMA.COLUMN_STATISTICS table.
+
+### 直方图
+在优化器中使用直方图统计信息。直方图统计主要用例是计算“列运算符常量”形式的谓词的选择性(过滤效果)。用户可以通过INFORMATION_SCHEMA.COLUMN_STATISTICS表获得优化统计信息。
+
+### Force Index
+FORCE INDEX to avoid index dives when possible (WL#6526) – This work by Sreeharsha Ramanavarapu allows the optimizer to skip index dives in queries containing FORCE INDEX. An index dive estimates the number of rows. These estimates are used to decide the choice of index. When FORCE INDEX has been specified, this estimation is irrelevant and can be skipped. This applies to a single-table query during execution if FORCE INDEX applies to a single index, without sub-queries, without fulltext index, without GROUP-BY or DISTINCT clauses, and without ORDER-BY clauses.
+This optimization applies to range queries and ref. queries, for example a range query like: SELECT a1 FROM t1 FORCE INDEX(idx) WHERE a1 > 'b';. In these cases, an EXPLAIN FOR CONNECTION FORMAT=JSON will output "skip_records_in_range_due_to_force": true and an optimizer trace will output "skipped_due_to_force_index".
+
+### 强制索引
+强制索引是为了避免index dives的，这个功能可以让优化器在包含FORCE INDEX的查询中跳过index dives，优化器根据index dive预估出来的结果集行数来决定选择走哪个索引。当指定FORCE INDEX时，这个预估就变得无关紧要，可以跳过。这个功能适用于单表查询时FORCE INDEX作用于单列索引（不涉及子查询，全文索引，GROUP-BY或DISTINCT，ORDER-BY）的情况。
+此优化应用于范围查询和普通索引查询。例如范围查询，如：SELECT a1 FROM t1 FORCE INDEX（idx）WHERE a1>'b';在这些情况下，EXPLAIN FOR CONNECTION FORMAT = JSON将输出skip_records_in_range_due_to_force”：true，并且optimizer trace将输出“skipped_due_to_force_index”。
+
+### Hints
+Hint to temporarily set session variable for current statement (WL#681) – This work by Sergey Glukhov implements a new optimizer hint called SET_VAR. The SET_VAR hint will set the value for a given system variable for the next statement only. Thus the value will be reset to the previous value after the statement is over. SET_VAR covers a subset of sessions variables, since some session variables either do not apply to statements or must be set at an earlier stage of statement execution. Some variable settings have much more meaning being set for a query rather than for a connection, for example you might want to increase sort_buffer_size before doing a large sort query but it is very likely other queries in a session are simple and you are quite OK with default settings for those. E.g.SELECT /*+ SET_VAR(sort_buffer = 16M) */ name FROM people ORDER BY name;
+
+### Hints
+优化器支持了一个新的hint，在当前会话中使用SET_VAR语法设置临时系统变量，SET_VAR只为下一个语句的给定系统变量设置值。因此，在语句结束后，该变量将被重置为先前的值。 SET_VAR涵盖会话变量的一个子集，因此一些会话变量不适用于该语句，或者必须在语句执行的早期阶段设置。一些变量的调整可能对于查询的意义比连接本身更大，例如您可能希望在进行大型排序查询之前增加sort_buffer_size，但很可能会话中的其他查询很简单，可以使用默认设置。例如：SELECT / * + SET_VAR（sort_buffer = 16M）* / name FROM people ORDER BY name;
+
+### Invisible Indexes
+Optimizer switch to see invisible indexes(WL#10891) – This work by Martin Hansson implements an optimizer switch named use invisible indexes which can be turned ON or OFF (default). Optimizer switches can be activated on a per session basis by SET @@optimizer_switch='use_invisible_indexes=on'; This feature supports the use case where a user wants to roll out an index. For example, the user may want to create the index as invisible and then activate the index in a specific session to measure the effect.
+
+### 不可见索引
+不可见索引可以被设置为ON或者OFF(默认)，优化器可以根据其状态切换模式选择是否走不可见索引。优化器的模式可以通过SET @@optimizer_switch='use_invisible_indexes=on';语句实现基于会话级别的切换。此功能支持用户想要测试索引的用例。例如，用户可能希望将索引创建为不可见，然后在特定会话中激活索引来测试效果。
+
+### Common Table Expressions
+Limit recursion in CTE (WL#10972) – This work by Guilhem Bichot implements a global and session variable called cte_max_recursion_depth to limit recursion in CTEs (default 1000, min 0, max 4G).This is done to protect the users from runaway queries, for example if the user forgets to add a WHERE clause to the recursive query block. When a recursive CTE does more than cte_max_recursion_depth iterations, the execution will stop and return an error message. iterations, the execution will stop and return an error message.
+
+### 公用表达式
+限制CTE中的递归。用一个名为cte_max_recursion_depth的变量（默认为1000，最小0，最大4G）来限制CTE中的递归。这样做是为了保护用户失控查询，例如，如果用户忘记向递归查询块添加WHERE子句。当递归CTE执行超过cte_max_recursion_depth次时，执行将停止并返回错误消息。
+
+### Character Sets
+Add Russian collations for utf8mb4 (WL#10753) – This work by Xing Zhang adds Russian collations utf8mb4_ru_0900_ai_ci and utf8mb4_ru_0900_as_cs for character set utf8mb4. The new collations sort characters of Russian language according to language specific rules defined by Unicode CLDR.
+
+### 字符集
+针对utf8mb4增加了俄罗斯的校对规则utf8mb4_ru_0900_ai_ci和utf8mb4_ru_0900_as_cs，新的归类根据Unicode CLDR定义的语言特定规则对俄语的字符进行排序。
+
+### JSON
+- Add JSON_MERGE_PATCH, rename JSON_MERGE to JSON_MERGE_PRESERVE (WL#9692) –This work by Knut Anders Hatlen implements two alternative JSON merge functions,JSON_MERGE_PATCH() and JSON_MERGE_PRESERVE().
+- 提供了两个可选择的JSON的合并函数，JSON_MERGE_PATCH（新添加）和JSON_MERGE_PRESERVE（原JSON_MERGE的重命名）。
+
+- The JSON_MERGE_PATCH() function implements the semantics of JavaScript (and other scripting languages) specified by RFC7396, i.e. it removes duplicates by precedence of the second document. For example, JSON_MERGE('{"a":1,"b":2 }','{"a":3,"c":4 }');#returns{"a":3,"b":2,"c":4}.
+- JSON_MERGE_PATCH（）函数通过RFC7396实现了JavaScript（和其他脚本语言）的语法，换句话说，它将按照第二个文档为高优先级删除重复项。例如：JSON_MERGE('{"a":1,"b":2 }','{"a":3,"c":4 }'); # returns{"a":3,"b":2,"c":4}
+
+- The JSON_MERGE_PRESERVE() function has the semantics of JSON_MERGE() implemented in MySQL 5.7 which preserves all values, for example JSON_MERGE('{"a":1,"b":2}','{"a":3,"c":4}'); #returns{"a":[1,3],"b":2,"c":4}.
+- JSON_MERGE_PRESERVE（）函数和MySQL 5.7中的JSON_MERGE（）是一样的，它会保留所有的值，例如JSON_MERGE('{"a":1,"b":2}','{"a":3,"c":4}');# returns {"a":[1,3],"b":2,"c":4}.
+
+- The existing JSON_MERGE() function is deprecated in MySQL 8.0 to remove ambiguity for the merge operation. See also proposal in Bug#81283.
+- 为了消除合并操作的歧义，之前的JSON_MERGE（）函数在MySQL 8.0中已被弃用。参见Bug＃81283中的提案。
+
+### GIS
+- Support SRID in InnoDB Spatial Index(WL#10439) – This work by Elzbieta Babij makes InnoDB Spatial Indexes aware of the Spacial Reference System (SRS) of the indexed column.The geography support in 8.0 needs to compare geometries using different formulas depending upon the SRS. Therefore, the index must know which SRS it is in in order to work correctly. When a spatial index is created InnoDB will do a sanity check that SRID for all rows are of the same type as specified by column.See Argument Handling by Spatial Functions.
+
+- InnoDB中地理空间索引（WL＃10439）支持SRID ,使得InnoDB地理空间索引知道索引列的空间参考系（SRS）。8.0中的地理空间支持需要根据SRS使用不同公式来对比几何位置。因此，索引必须知道其在哪个SRS中才能正常工作。当创建地理空间索引时，InnoDB将进行一个完整性检查，确保所有行的SRID与列指定的类型相同。参见空间函数的参数处理。
+
+- Ellipsoidal R-tree support functions (WL#10827) – This work by Norvald Ryeng reimplements the R-trees support functions for Minimum Bounding Rectangles (MBR) operations in a way that supports both Cartesian and geographical computations. R-tree indexes on columns with Cartesian geometries use Cartesian computations, and R-tree indexes on columns with geographic geometries use geographic computations. If an R-tree contains a mix of Cartesian and geographic geometries, or if any geometries are invalid, the result of any operation on that index is undefined.
+- 支持椭圆形R树功能（WL＃10827），R树支持用笛卡尔和地理计算的方式重新实现了最小边界矩形（MBR）操作的功能。R-tree索引上的笛卡尔几何和地理几何分别用笛卡尔和地理计算，如果R-tree包含笛卡尔和地理几何的混合，或者如果任意一个几何形状无效，则该索引上的任何操作的结果都是未定义的。 
+
+- SRID type modifier for geometric types (WL#8592) – This work by Erik Froseth adds a new column property for geometric types to specify the SRID. For example SRID 4326 in CREATE TABLE t1 (g GEOMETRY SRID 4326, p POINT SRID 0 NOT NULL);. Values inserted into a column with an SRID property must be in that SRID. Attempts to insert values with other SRIDs results in an exception condition being raised. Unmodified types, i.e., types with no SRID specification, will continue to accept all SRIDs as before. The optimizer is changed so that only indexes on columns with the SRID specified will be considered in query planning/execution.The specified SRID is exposed in both INFORMATION_SCHEMA.GEOMETRY_COLUMNS and INFORMATION_SCHEMA.COLUMNS.
+- 几何类型的SRID类型修改（WL＃8592） 为几何类型添加了一个新的列属性来指定SRID。 例如CREATE TABLE t1（g GEOMETRY SRID 4326，p POINT SRID 0 NOT NULL）中的SRID 4326;插入具有SRID属性的列中的值必须在该SRID中。尝试使用其他SRID插入值会导致引发异常情况。未修改的类型也就是不具有SRID规范的类型，还像以前一样继续接受所有的SRID。这个优化的改变方便了在查询计划/执行中仅考虑指定SRID的索引列的情况。指定的SRID显示在INFORMATION_SCHEMA.GEOMETRY_COLUMNSINFORMATION_SCHEMA.COLUMNS中。
+
+### Changes to Defaults
+Autoscale InnoDB resources based on system resources by default (WL#9193) – This work by Mayank Prasad introduces a new option innodb_dedicated_server which can be set OFF/ON (OFF by default). If ON, settings for following InnoDB variables (if not specified explicitly) would be scaled accordingly innodb_buffer_pool_size, innodb_log_file_size,and innodb_flush_method. See also blog post Plan to improve the out of the Box Experience in MySQL 8.0 by Morgan Tocker.
+
+
+
+
+
+### 默认值变更
+默认情况下，根据系统资源自动调整InnoDB资源。引入了一个新的选项  innodb_dedicated_server，可以设置为OFF / ON（默认为OFF）。如果为ON，则下列InnoDB变量（如果未明确指定）的设置将相应缩为innodb_buffer_pool_size，innodb_log_file_size和innodb_flush_method。另请参阅Morgan Tocker的针对MySQL8.0创造性改善计划的博客文章。
+
+- Change innodb_autoinc_lock_mode default to 2 (WL#9699) – This work by Mayank Prasad changes the default of innodb_autoinc_lock_mode from sequential (1) to interleaved (2). This can be done because the default replication format is row-based replication. This change is known to be incompatible with statement based replication, and may break some applications or user-generated test suites that depend on sequential auto increment. The previous default can be restored by setting innodb_autoinc_lock_mode=1;
+
+- 将innodb_autoinc_lock_mode的默认值从连续的（1）更改为交错的（2）。因为现在默认的复制格式是基于行的复制，所以这个是可以实现的。但此更改与基于statement的复制不兼容，并且可能会破坏依赖于连续自增值一些应用程序或用户生成的测试套件。以前的默认值可以通过设置innodb_autoinc_lock_mode=1恢复;
+
+- Change innodb_flush_neighbors default to 0 (WL#9631) – This work by Mayank Prasad changes the default of innodb_flush_neighbors from 1 (enable) to 0 (disable). This is done because fast IO (SSDs) is now the default for deployment. We expect that for the majority of users, this will result in a small performance gain. Users who are using slower hard drives may see a performance loss, and are encouraged to revert to the previous defaults by setting innodb_flush_neighbors=1.
+
+- 将innodb_flush_neighbors的默认值从1（启用）更改为0（禁用）。这是因为现在大家默认部署服务都使用快速IO（SSD）。我们预计，对于大多数用户来说，这将导致较小的性能提升。如果使用较慢的硬盘驱动器性能可能会有一定损失，我们建议您通过设置innodb_flush_neighbors=1将其恢复为以前的默认值。
+
+- Change innodb_max_dirty_pages_pct_lwm default to 10 (WL#9630) – This work by Mayank Prasad changes the default of innodb_max_dirty_pages_pct_lwm from 0 (%) to 10 (%). With innodb_max_dirty_pages_pct_lwm=10, InnoDB will increase its flushing activity when >10% of the buffer pool contains modified (‘dirty’) pages. The motivation for this default change is to trade off peak throughput slightly, in exchange for more consistent performance. We do not expect the majority of users to see impact from this change, but symptomatically query throughput may be reduced after a number of sustained modifications. Users who wish to revert to the previous behavior can set innodb_max_dirty_pages_pct_lwm=0. The value of zero disables the increased flushing heuristic.
+
+- 将innodb_max_dirty_pages_pct_lwm默认值从0(%)调整为10(%)。这样一来，当缓冲池中脏页超过10%的时候，InnoDB刷新脏页的效率会得到一定的提升。这个修改的动机是通过轻微的吞吐量的损失来换取来换取更连续平稳的性能。我们希望大部分用户不要太在意这个变更的影响，我们会通过不断地调整来缓解这个问题。对于想要恢复到之前状态的用户，可以设置innodb_max_dirty_pages_pct_lwm=0。0值禁止the increased flushing heuristic(这句不知道怎么翻译)
+
+- Change innodb_max_dirty_pages_pct default to 90 (WL#9707) – This work by Mayank Prasad changes the default of innodb_max_dirty_pages_pct from 75 (%) to 90 (%).  With this change, InnoDB will allow a slightly greater number of modified (‘dirty’) pages in the buffer pool, at the risk of a lower amount of free-able space for other operations that require loading pages into the buffer pool. However in practice, InnoDB does not have the same reliance on innodb_max_dirty_pages_pct as it did in earlier versions of MySQL because of the introduction of a new low-watermark heuristic. With innodb_max_dirty_pages_pct_lwm, flushing activity increases at a much earlier point (default: 10%). Users wishing to revert to the previous behavior can set innodb_max_dirty_pages_pct=75 and innodb_max_dirty_pages_pct_lwm=0.
+
+- 将innodb_max_dirty_pages_pct的默认值从75（％）更改为90（％）。通过这个更改，在存在需要将页面加载到缓冲池中的其他操作的可用空间较少的风险的情况下，InnoDB缓冲池中可以允许稍微更多的脏页存在。然而在实践中，因为引入了一种新的低水位启发式算法InnoDB与老版本中的innodb_max_dirty_pages_pct不一样。使用innodb_max_dirty_pages_pct_lwm，刷新脏页的点会被提升到一个更早的点（默认值：10％）。希望恢复以前配置的用户可以设置innodb_max_dirty_pages_pct=75和innodb_max_dirty_pages_pct_lwm=0。
+
+- Change default algorithm for calculating back_log (WL#9704) – This work by Abhishek Ranjan changes the algorithm used for the back_log default which is autosize (-1). The new algorithm is simply to set back_log equal to max_connections. Default value will be capped to maximum limit permitted by range of ‘back_log’ (65535). The old algorithm  was to set back_log = 50 + (max_connections / 5).
+
+- 修改了之前自动调整back_log的算法（-1）。新算法直接将back_log设置为等于max_connections。默认值将被限制到“back_log”（65535）范围允许的最大限制。旧的算法是设置的back_log = 50 + (max_connections / 5)。
+
+- Change max-allowed-packet compiled default to 64M (WL#8393) – This work by Abhishek Ranjan changes the default of max_allowed_packet from 4194304 (4M) to 67108864 (64M). The main advantage with this larger default is that fewer users receive errors about insert or query being larger than max_allowed_packet. Users wishing to revert to the previous behavior can set max_allowed_packet=4194304.
+
+- max_allowed_packet的默认值从4194304（4M）更改为67108864（64M）。这样的主要优势在于让更少的用户收到报错”插入或查询的时候大于max_allowed_packet”。想恢复到之前默认值的用户可以设置max_allowed_packet=4194304。
+
+- Change max_error_count default to 1024 (WL#9686) – This work by Abhishek Ranjan changes the default of max_error_count from 64 to 1024. The effect is that MySQL will handle a larger number of warnings, e.g. for an UPDATE statement that touches 1000s of rows and many of them give conversion warnings (batched updates). There are no static allocations, so this change will only affect memory consumption for statements that generate lots of warnings.
+
+- 将max_error_count的默认值从64 更改为1024.这样MySQL可以处理更多的警告，例如，一个UPDATE语句触发 1000行的记录变更，这个过程会生成一些警告（批量更新）。没有静态分配，所以这个变更只会影响生成大量警告的语句的内存消耗。
+
+- Enable event_scheduler by default (WL#9644) – This work by Abhishek Ranjan changes the default of event_scheduler from OFF to ON. This is seen as an enabler for new features in SYS, for example “kill idle transactions”.
+
+- event_scheduler的默认值从OFF 更改为ON。这被视为对SYS中新功能的启用，例如“kill idle transaction”。
+
+- Enable binary log by default (WL#10470) – This work by Narendra Chauhan changes the default of –log-bin from OFF to ON. Nearly all production installations have the binary log enabled as it is used for replication and point-in-time recovery. Thus, by enabling binary log by default we eliminate one configuration step for users (enabling it later requires a mysqld restart). By enabling it by default we also get better test coverage and it becomes easier to spot performance regressions.
+
+- log-bin的默认值从OFF更改为ON。因为复制和基于时间点恢复的需要，几乎所有的生产安装都启用了二进制日志。因此，通过默认启用二进制日志，免去了用户开启binlog之后需要重启mysqld服务的步骤。通过默认启用它，我们还可以获得更好的测试覆盖率，并且更容易发现性能回归。
+
+- Enable replication chains by default (WL#10479) – This work by Ganapati Sabhahit changes the default of log-slave-updates from OFF to ON.  This causes a slave to log replicated events into its own binary log. This option ensures correct behavior in various replication chain setups, which have become the norm today. This is also required for Group Replication.
+
+- log-slave-updates的默认值从OFF改为ON。这样从机会把复制的事件记录到其自己的二进制日志中以确保在各种复制链中的参数设置正确，而这也已成为现在的一个标准，这还是组复制所必需的。
+
+### Deprecation and Removal
+### 抵制和废除
+- Remove query cache (WL#10824) – This work by Steinar Gunderson removes the query cache for 8.0. See also blog post Retiring Support for the Query Cache by Morgan Tocker. All related startup options and configuration variables are removed as well. HAVE_QUERY_CACHE will now return NO, so that well-behaved clients can check for this and behave accordingly. The SQL_NO_CACHE keyword will continue to exist, but will be ignored (no effect in the grammar). This is so that e.g. mysqldump can continue working.
+
+- 删除8.0的查询缓存功能，其所有相关的启动选项和配置变量也被删除。为了客户端可以检查并执行相应的操作，现在HAVE_QUERY_CACHE变量将返回NO。SQL_NO_CACHE关键字将继续存在，但将被忽略（在语法中不起作用）。也就是说，例如mysqldump这种工具可以继续正常使用。
+
+- Rename tx_{read_only,isolation} variables to transaction_{read_only,isolation}  (WL#9636) – This work by Nisha Gopalakrishnan removes the system variables called tx_read_only and  tx_isolation. Use transaction_read_only and transaction_isolation instead. This is done to harmonize wording with command-line format –transaction_read_only and –transaction_isolation as well as with other transaction related system varaibles like transaction_alloc_block_size, transaction_allow_batching, and transaction_prealloc_size. See also Bug#70008 reported by Simon Mudd.
+
+- 将tx_{read_only,isolation}变量重命名为transaction_{read_only,isolation}这样做是为了与命令行格式的-transaction_read_only和-transaction_isolation以及与其它事务相关的系统变量像transaction_alloc_block_size，transaction_allow_batching和transaction_prealloc_size互相统一。
+
+- Remove log_warnings option (WL#9676) – This work by Tatjana Nurnberg removes the old log-warnings option deprecated in 5.7. Use log_error_verbosity instead.
+- 删除了5.7中不推荐使用的旧日志警告选项。改用log_error_verbosity。
+
+- Remove ignore_builtin_innodb option (WL#9675) – This work by Georgi Kodinov removes the old ignore_builtin_innodb options deprecated in 5.6. Even when used, these options have had no effect since MySQL 5.6.
+- 删除了在5.6中不推荐使用的旧的ignore_builtin_innodb选项。从MySQL 5.6起，即使使用，些选项也没有任何效果。
+
+- Remove ENCODE()/DECODE() functions (WL#10788) – This work by Georgi Kodinov removes the ENCODE() and DECODE() functions deprecated in 5.7.Use AES_ENCRYPT() and AES_DECRYPT() instead.
+- 删除了5.7中不推荐使用的ENCODE（）和DECODE（）函数。请改用AES_ENCRYPT（）和AES_DECRYPT（）。
+
+- Remove ENCRYPT(), DES_ENCRYPT(), and DES_DECRYPT() functions (WL#10789) –This work by Georgi Kodinov removes the ENCRYPT(), DES_ENCRYPT(),and DES_DECRYPT() functions deprecated in 5.7. Use AES_ENCRYPT() and AES_DECRYPT() instead.    
+- 删除了5.7中不推荐使用的ENCRYPT（），DES_ENCRYPT （）和DES_DECRYPT（）函数。请改用AES_ENCRYPT（）和AES_DECRYPT（）。
+
+- Remove parameter secure_auth (WL#9674) – This work by Georgi Kodinov removes the secure_auth deprecated in 5.7. The option appears in server and clients. Even when used, these options have had no effect since MySQL 5.7. The secure-auth was used to control whether the mysql_old_password methods are allowed on the client and the server but this authentication method is now gone from both the client and the server.
+- 删除了5.7中不推荐使用的secure_auth。该配置用在服务端和客户端上。从MySQL5.7开始，即使使用这选项也没有效果。之前secure-auth是用来控制mysql_old_password的方法是否允许在客户端和服务端上使用，但这个身份验证方法现在都没用了。
+
+- Remove EXPLAIN PARTITIONS and EXTENDED options (WL#9678) – This work by Sreeharsha Ramanavarapu removes the EXTENDED and PARTITIONS keywords from EXPLAINdeprecated in 5.7. Both EXTENDED and PARTITIONS output are enabled by default since 5.7, so these keywords are superfluous and thus removed.
+- 删除了在5.7中弃用的EXPLAIN和PARTITIONS关键字。从5.7开始，EXTENDED和PARTITIONS输出都被默认启用，所以这些关键字是多余的，因此被删除。
+
+- Remove unused date_format, datetime_format, time_format, max_tmp_tables (WL#9680) – This work by Sreeharsha Ramanavarapu removes system variables date_format, datetime_format, time_format,and max_tmp_tables. These variables have never been in use (or at least not been used in MySQL 4.1 or newer releases).
+- 删除系统变量date_format，datetime_format，time_format和max_tmp_tables。这些变量从来没有被使用过（或至少没有在MySQL 4.1或更新的版本中使用）。
+
+- Remove multi_range_count system variable (WL#10908) – This work by Sreeharsha Ramanavarapu removes the system variable multi_range_count deprecated in 5.1. Even when used, this option has had no effect since MySQL 5.5. From MySQL 5.5 and onwards, arbitrarily long lists of ranges can be processed.
+- 删除了5.1中不推荐使用的系统变量multi_range_count。即使使用，从MySQL   5.5开始，可以处理任意长的范围列表，所以这个变量没有任何效果。(这个没怎么理解这个参数)
+
+- Remove the global scope of the sql_log_bin system variable (WL#10922) – This work by Luis Soares removes the global scope of the sql_log_bin system variable in MySQL 8.0. The sql_log_bin was set read only in MySQL 5.5, 5.6 and 5.7. In addition, reading this variable was deprecated in MySQL 5.7. See also Bug#67433 reported by Jeremy Cole.
+- MySQL 8.0中删除了全局系统变量sql_log_bin。sql_log_bin在MySQL 5.5，5.6和5.7被设置为只读。另外，在MySQL 5.7中这个变量已经不可读。另见Jeremy Cole报道的Bug＃67433。(这块有问题，我5.7实例可以看到这个参数)
+
+- Deprecate master.info and relay-log.info files (WL#6959) – This work by Luis Soares implements a deprecation warning in the server when either relay-log-info-repository or master-info-repository are set to FILE instead of TABLE. The default setting is TABLE for both options and this is also the most crash-safe setup.
+- 在服务端实现了当relay-log-info-repository或master-info-repository设置为FILE而不是表时会发出不推荐告警。默认设置是两个选项的TABLE，这也是最安全的设置。
+
+- Deprecate mysqlbinlog –stop-never-slave-server-id (WL#9633) – This work by Luis Soares implements a deprecation warning in the mysqlbinlog utility for the –stop-never-slave-server-id option. Use the –connection-server-id option instead.
+- 在使用-stop-never-slave-server-id参数的mysqlbinlog应用中实现了一个不推荐的警告。请改用-connection-server-id参数。
+
+- Deprecate mysqlbinlog- -short-form (WL#9632) – This work by Luis Soares implements a deprecation warning in the mysqlbinlog utility for the –short-form option. This option is not to be used in production (as stated in the docs) and is now too overloaded to be used even when testing.
+- 在-short-form参数的mysqlbinlog应用中实现了一个废弃警告。此选项不会在生产中使用（如文档中所述），并且现在过载甚至在测试时也不会被使用。
+
+- Deprecate IGNORE_SERVER_IDS when GTID_MODE=ON (WL#10963) – This work by Luis Soares implements a deprecation warning when users try to use CHANGE MASTER TOIGNORE_SERVER_IDS together with GTID_MODE=ON.  When GTID_MODE=ON, any transaction that has been applied is automatically filtered out, so there is no need for IGNORE_SERVER_IDS.
+- 实现了一项弃用警告。当GTID_MODE = ON时，已应用的任何事务都会自动过滤掉，因此不需要IGNORE_SERVER_IDS。
+
+- Deprecate expire_logs_days (WL#10924) – This work by Neha Kumari adds a deprecation warning when users try to set expire_logs_days. Use the new variable binlog_expire_log_seconds instead. The new variable allows users to set expire time which need not be a multiple of days. This is the better way to set the expiration time and also more flexible, it makes the system variable expire_logs_days superfluous.
+- 在用户尝试设置expire_logs_days时添加了一项弃用警告。让改用新的变量binlog_expire_log_seconds。新变量允许用户设置到期时间(这里没太理解)。这是设置到期时间的更好方法，也更灵活，这使得系统变量expire_logs_logs_days变得有些多余
+
+## That’s it for now. Thank you for using MySQL!
+## 这就是本次所有亮点，感谢您对MySQL的支持！
