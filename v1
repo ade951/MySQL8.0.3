@@ -2,7 +2,7 @@
 # MySQL8.03 RC 已发布
 
 ## The MySQL Development team is very happy to announce that MySQL 8.0.3, the first 8.0 Release Candidate (RC1), is now available for download at dev.mysql.com (8.0.3 adds features to 8.0.2, 8.0.1 and 8.0.0). The source code is available at GitHub. You can find the full list of changes and bug fixes in the 8.0.3 Release Notes. Here are the highlights. Enjoy!
-## MySQL的开发团队非常高兴地宣布，第一个8.0优选发布版（RC1）——MySQL的8.0.3现已可在dev.mysql.com下载（相对于8.0.2，8.0.1和8.0.0，8.0.3添加了一些新特性）。源代码可在GitHub获得。您可以在8.0.3发行说明中看到新版本的改变和bug修复的完整列表。下面是新版本的一些亮点。大家赶快体验吧！
+## MySQL的开发团队非常高兴地宣布，第一个8.0候选发布版（RC1）——MySQL的8.0.3现已可在dev.mysql.com下载（相对于8.0.2，8.0.1和8.0.0，8.0.3添加了一些新特性）。源代码可在GitHub获得。您可以在8.0.3发行说明中看到新版本的改变和bug修复的完整列表。下面是新版本的一些亮点。大家赶快体验吧！
 
 ### Histograms
 Using histogram statistics in the optimizer (WL#9223) – This work by Erik Froseth makes use of histogram statistics in the optimizer.The primary use case for histogram statistics is for calculating the selectivity (filter effect) of predicates of the form “COLUMN operator CONSTANT”. Optimizer statistics are available to the user through the INFORMATION_SCHEMA.COLUMN_STATISTICS table.
